@@ -57,28 +57,26 @@
 //
 // Mikael O. Bonnier
 /////////////////////////////////////////////////////////////////////
-/**/
+ /**/
 // It is compiled on my system by:
 // gcc blockis.c -o blockis -lncurses -std=c99
-
 #include <ncurses.h>
 #include <sys/param.h>
-
-void drawBlock();
-void moveOn();
-void hitGround();
-bool blockCollides();
-void resetBlock();
-void setBlock();
-void render();
-bool blit(bool (*doCell)(int, int), int block, int rot, int row, int col);
-bool doCellBlockCollides(int r, int c);
-bool doCellResetBlock(int r, int c);
-bool doCellSetBlock(int r, int c);
+void drawBlock ();
+void moveOn ();
+void hitGround ();
+bool blockCollides ();
+void resetBlock ();
+void setBlock ();
+void render ();
+bool blit (bool (*doCell) (int, int), int block, int rot, int row, int col);
+bool doCellBlockCollides (int r, int c);
+bool doCellResetBlock (int r, int c);
+bool doCellSetBlock (int r, int c);
 
 #define MATRIX_ROWS (20)
 #define MATRIX_COLS (10)
-const int _nDelay = 100; // ms
+const int _nDelay = 100;	// ms
 const int INTERLEAVE = 8;
 #define _ROT0 (0)
 #define _ROT90 (1)
@@ -86,22 +84,32 @@ const int INTERLEAVE = 8;
 #define _ROT270 (3)
 char _nMatrix[MATRIX_ROWS][MATRIX_COLS];
 char _nMatrixPrev[MATRIX_ROWS][MATRIX_COLS];
-const bool _nBI[2][4] = {{0,0,0,0},
-                         {1,1,1,1}};
-const bool _nBT[2][3] = {{1,1,1},
-                         {0,1,0}};
-const bool _nBO[2][2] = {{1,1},
-                         {1,1}};
-const bool _nBL[2][3] = {{1,1,1},
-                         {1,0,0}};
-const bool _nBJ[2][3] = {{1,1,1},
-                         {0,0,1}};
-const bool _nBS[2][3] = {{0,1,1},
-                         {1,1,0}};
-const bool _nBZ[2][3] = {{1,1,0},
-                         {0,1,1}};
-const bool *_blocks[7] = {(bool *)_nBI, (bool *)_nBT, (bool *)_nBO,
-                          (bool *)_nBL, (bool *)_nBJ, (bool *)_nBS, (bool *)_nBZ};
+const bool _nBI[2][4] = { {0, 0, 0, 0},
+{1, 1, 1, 1}
+};
+const bool _nBT[2][3] = { {1, 1, 1},
+{0, 1, 0}
+};
+const bool _nBO[2][2] = { {1, 1},
+{1, 1}
+};
+const bool _nBL[2][3] = { {1, 1, 1},
+{1, 0, 0}
+};
+const bool _nBJ[2][3] = { {1, 1, 1},
+{0, 0, 1}
+};
+const bool _nBS[2][3] = { {0, 1, 1},
+{1, 1, 0}
+};
+const bool _nBZ[2][3] = { {1, 1, 0},
+{0, 1, 1}
+};
+
+const bool *_blocks[7] = { (bool *) _nBI, (bool *) _nBT, (bool *) _nBO,
+  (bool *) _nBL, (bool *) _nBJ, (bool *) _nBS, (bool *) _nBZ
+};
+
 bool _bRunning = TRUE;
 int _iBlockNext, _iBlock, _iBlockPrev;
 int _nRot, _nRotPrev;
@@ -112,137 +120,150 @@ bool _bNewBlock;
 static int _nLevel = 0;
 static int _nScore, _nHiScore = 0;
 
-void init() {
-    initscr();
-    cbreak();
-    noecho();
-    // scrollok(stdscr, TRUE);
-    nodelay(stdscr, TRUE);
-    keypad(stdscr, TRUE);
-    curs_set(0);
+void
+init ()
+{
+  initscr ();
+  cbreak ();
+  noecho ();
+  // scrollok(stdscr, TRUE);
+  nodelay (stdscr, TRUE);
+  keypad (stdscr, TRUE);
+  curs_set (0);
 }
 
 /**
  * This method clears the graphics.
  */
-void clearGraphics()
+void
+clearGraphics ()
 {
-    // Clear the Graphics.
-    clear();
+  // Clear the Graphics.
+  clear ();
 
-    //_nMColors[0];
-    //g.fillRect(0, 0, _cw, _ch);
-    //_nMColors[2];
-    //g.drawRect(0, 0, MATRIX_COLS*_nScaleX+1, MATRIX_ROWS*_nScaleY+1);
-    //g.setGrayScale(0xFF);
-    //g.drawString(String.valueOf(_nScore), getWidth(), MATRIX_ROWS*_nScaleY,
-    //     Graphics.BASELINE | Graphics.RIGHT);
-    mvprintw(MATRIX_ROWS-1, MATRIX_COLS+1, "%d", _nScore);
-    //g.drawString(String.valueOf(_nHiScore), getWidth(), (MATRIX_ROWS-8)*_nScaleY,
-    //     Graphics.BASELINE | Graphics.RIGHT);
-    mvprintw(MATRIX_ROWS-8, MATRIX_COLS+1, "%d", _nHiScore);
+  //_nMColors[0];
+  //g.fillRect(0, 0, _cw, _ch);
+  //_nMColors[2];
+  //g.drawRect(0, 0, MATRIX_COLS*_nScaleX+1, MATRIX_ROWS*_nScaleY+1);
+  //g.setGrayScale(0xFF);
+  //g.drawString(String.valueOf(_nScore), getWidth(), MATRIX_ROWS*_nScaleY,
+  //     Graphics.BASELINE | Graphics.RIGHT);
+  mvprintw (MATRIX_ROWS - 1, MATRIX_COLS + 1, "%d", _nScore);
+  //g.drawString(String.valueOf(_nHiScore), getWidth(), (MATRIX_ROWS-8)*_nScaleY,
+  //     Graphics.BASELINE | Graphics.RIGHT);
+  mvprintw (MATRIX_ROWS - 8, MATRIX_COLS + 1, "%d", _nHiScore);
 }
 
 /**
  * This method starts the game.
  */
-void start()
+void
+start ()
 {
-    _nScore = 0;
-    clearGraphics();
-    // Reset the matrix.
-    for(int r = 0; r < MATRIX_ROWS; ++r)
-        for(int c = 0; c < MATRIX_COLS; ++c)
-            _nMatrix[r][c] = _nMatrixPrev[r][c] = 0;
-    _bNewBlock = true;
-    _iBlockNext = 1;
-    _iColorNext = 1;
-    _bRunning = true;
+  _nScore = 0;
+  clearGraphics ();
+  // Reset the matrix.
+  for (int r = 0; r < MATRIX_ROWS; ++r)
+    for (int c = 0; c < MATRIX_COLS; ++c)
+      _nMatrix[r][c] = _nMatrixPrev[r][c] = 0;
+  _bNewBlock = true;
+  _iBlockNext = 1;
+  _iColorNext = 1;
+  _bRunning = true;
 }
 
 /**
  * This resumes animation after a pause.
  */
-void resume()
+void
+resume ()
 {
-    _bRunning = true;
+  _bRunning = true;
 }
 
 /**
  * This is called to stop the animation when pausing, destroying or game over.
  */
-void stop()
+void
+stop ()
 {
-    _bRunning = false;
+  _bRunning = false;
 }
 
-int main()
+int
+main ()
 {
-    int loopCount = 1;
+  int loopCount = 1;
 
-    init();
-    start();
+  init ();
+  start ();
 
-    for(;;) {
-    	while(_bRunning) {
-        	chtype ks = getch();
-        	switch(ks) {
-        	case KEY_LEFT:
-        	case 'a':
-            	--_nMCol;
-            	break;
-        	case KEY_RIGHT:
-        	case 'd':
-            	++_nMCol;
-            	break;
-        	case KEY_UP:
-        	case 'w':
-            	_nRot = _nRot >= 3 ? 0 : _nRot + 1;
-            	break;
-        	case 'Q':
-            	stop();
-            	break;
-        	}
-        	flushinp();
-        	if(_bNewBlock) {
-            	_nMRow = _nMRowPrev = 0;
-            	_nMCol = _nMColPrev = 3;
-            	_iBlock = _iBlockNext;
-            	if(_iBlock == 0)
-                	_nMRow = _nMRowPrev = -1;
-            	_iBlockNext = 1;
-            	_iColor = _iColorNext;
-            	_iColorNext = 1;
-            	_nRot = 0;
-        	}
-        	drawBlock();
+  for (;;)
+    {
+      while (_bRunning)
+	{
+	  chtype ks = getch ();
+	  switch (ks)
+	    {
+	    case KEY_LEFT:
+	    case 'a':
+	      --_nMCol;
+	      break;
+	    case KEY_RIGHT:
+	    case 'd':
+	      ++_nMCol;
+	      break;
+	    case KEY_UP:
+	    case 'w':
+	      _nRot = _nRot >= 3 ? 0 : _nRot + 1;
+	      break;
+	    case 'Q':
+	      stop ();
+	      break;
+	    }
+	  flushinp ();
+	  if (_bNewBlock)
+	    {
+	      _nMRow = _nMRowPrev = 0;
+	      _nMCol = _nMColPrev = 3;
+	      _iBlock = _iBlockNext;
+	      if (_iBlock == 0)
+		_nMRow = _nMRowPrev = -1;
+	      _iBlockNext = 1;
+	      _iColor = _iColorNext;
+	      _iColorNext = 1;
+	      _nRot = 0;
+	    }
+	  drawBlock ();
 
-        	render();
-        	refresh();
-        	napms(_nDelay);
+	  render ();
+	  refresh ();
+	  napms (_nDelay);
 
-        	if(ks == KEY_DOWN || ks == 's' || loopCount % INTERLEAVE == 0) {
-            	++_nMRow;
-        	}
-        	++loopCount; // loopCount will wrap around at Integer.MAX_VALUE.
-    	}
-        chtype ks = getch();
-	switch(ks) {
-		case 'S':
-			start();
-			break;
-		case 'R':
-			resume();
-			break;
-		case 'Q':
-			endwin();
-			return 0;
-			break;
+	  if (ks == KEY_DOWN || ks == 's' || loopCount % INTERLEAVE == 0)
+	    {
+	      ++_nMRow;
+	    }
+	  ++loopCount;		// loopCount will wrap around at Integer.MAX_VALUE.
 	}
-	napms(_nDelay);
+      chtype ks = getch ();
+      switch (ks)
+	{
+	case 'S':
+	  start ();
+	  break;
+	case 'R':
+	  resume ();
+	  break;
+	case 'Q':
+	  endwin ();
+	  return 0;
+	  break;
+	}
+      napms (_nDelay);
     }
-    endwin();
-    return 0;
+  endwin ();
+  return 0;
 }
 
 /**
@@ -250,46 +271,58 @@ int main()
  * would be a collision with walls or the ground it tries to prevent it by prohibiting
  * rotation and motion or restricting motion. This method also detects Game Over.
  */
-void drawBlock()
+void
+drawBlock ()
 {
-    if(!_bNewBlock)
-        resetBlock();
-    if(blockCollides()) {
-        if(!_bNewBlock) {
-            if(_nRot != _nRotPrev) {
-                _nRot = _nRotPrev;
-                if(!blockCollides()) {
-                    moveOn();
-                    return;
-                }
-            }
-            if(_nMRow != _nMRowPrev && _nMCol == _nMColPrev) {
-                hitGround();
-            }
-            else if(_nMCol != _nMColPrev && _nMRow != _nMRowPrev) {
-                _nMCol = _nMColPrev;
-                if(blockCollides()) {
-                    hitGround();
-                }
-                else {
-                    moveOn();
-                }
-            }
-            else {
-                _nMCol = _nMColPrev;
-                moveOn();
-            }
-        }
-        else {
-            _nHiScore = MAX(_nHiScore, _nScore);
-            mvprintw(MATRIX_ROWS-8, MATRIX_COLS+1, "%d", _nHiScore);
-            mvprintw(0, MATRIX_COLS+1, "%s", "GAME OVER");
-            stop();
-            //_mobt.gameOver();
-        }
+  if (!_bNewBlock)
+    resetBlock ();
+  if (blockCollides ())
+    {
+      if (!_bNewBlock)
+	{
+	  if (_nRot != _nRotPrev)
+	    {
+	      _nRot = _nRotPrev;
+	      if (!blockCollides ())
+		{
+		  moveOn ();
+		  return;
+		}
+	    }
+	  if (_nMRow != _nMRowPrev && _nMCol == _nMColPrev)
+	    {
+	      hitGround ();
+	    }
+	  else if (_nMCol != _nMColPrev && _nMRow != _nMRowPrev)
+	    {
+	      _nMCol = _nMColPrev;
+	      if (blockCollides ())
+		{
+		  hitGround ();
+		}
+	      else
+		{
+		  moveOn ();
+		}
+	    }
+	  else
+	    {
+	      _nMCol = _nMColPrev;
+	      moveOn ();
+	    }
+	}
+      else
+	{
+	  _nHiScore = MAX (_nHiScore, _nScore);
+	  mvprintw (MATRIX_ROWS - 8, MATRIX_COLS + 1, "%d", _nHiScore);
+	  mvprintw (0, MATRIX_COLS + 1, "%s", "GAME OVER");
+	  stop ();
+	  //_mobt.gameOver();
+	}
     }
-    else {
-        moveOn();
+  else
+    {
+      moveOn ();
     }
 }
 
@@ -297,13 +330,15 @@ void drawBlock()
  * This method is called when there is no collision or a collision that has been avoided.
  * It allows the block to continue its fall.
  */
-void moveOn()
+void
+moveOn ()
 {
-    _bNewBlock = false;
-    setBlock();
-    _iBlockPrev = _iBlock;
-    _nRotPrev = _nRot;
-    _nMRowPrev = _nMRow; _nMColPrev = _nMCol;
+  _bNewBlock = false;
+  setBlock ();
+  _iBlockPrev = _iBlock;
+  _nRotPrev = _nRot;
+  _nMRowPrev = _nMRow;
+  _nMColPrev = _nMCol;
 }
 
 /**
@@ -311,54 +346,62 @@ void moveOn()
  * and compacts according to the rules of standard tetris. Points calculation
  * is done here.
  */
-void hitGround()
+void
+hitGround ()
 {
-    _bNewBlock = true;
-    _nMRow = _nMRowPrev; _nMCol = _nMColPrev;
-    setBlock();
-    int r, c, rMove;
+  _bNewBlock = true;
+  _nMRow = _nMRowPrev;
+  _nMCol = _nMColPrev;
+  setBlock ();
+  int r, c, rMove;
 
-    bool fullLines[MATRIX_ROWS];
-    bool existsFull, isFull;
-    existsFull = false;
-    int noOfLines = 0;
-    for(int r = MATRIX_ROWS - 1; r >= 0; --r) {
-        isFull = true;
-        for(int c = 0; c < MATRIX_COLS; ++c)
-            if(_nMatrix[r][c] == 0) {
-                isFull = false;
-                break;
-            }
-        if(fullLines[r] = isFull) {
-            existsFull = true;
-            ++noOfLines;
-            for(c = 0; c < MATRIX_COLS; ++c)
-                _nMatrix[r][c] = 0;
-        }
+  bool fullLines[MATRIX_ROWS];
+  bool existsFull, isFull;
+  existsFull = false;
+  int noOfLines = 0;
+  for (int r = MATRIX_ROWS - 1; r >= 0; --r)
+    {
+      isFull = true;
+      for (int c = 0; c < MATRIX_COLS; ++c)
+	if (_nMatrix[r][c] == 0)
+	  {
+	    isFull = false;
+	    break;
+	  }
+      if (fullLines[r] = isFull)
+	{
+	  existsFull = true;
+	  ++noOfLines;
+	  for (c = 0; c < MATRIX_COLS; ++c)
+	    _nMatrix[r][c] = 0;
+	}
     }
 
-    const int scores[] = {40, 100, 300, 1200};
-    if(existsFull) {
-        _nScore += (_nLevel+1)*scores[noOfLines-1];
-        mvprintw(MATRIX_ROWS-1, MATRIX_COLS+1, "%d", _nScore);
+  const int scores[] = { 40, 100, 300, 1200 };
+  if (existsFull)
+    {
+      _nScore += (_nLevel + 1) * scores[noOfLines - 1];
+      mvprintw (MATRIX_ROWS - 1, MATRIX_COLS + 1, "%d", _nScore);
 
-        render();
-        refresh();
-        napms(_nDelay);
-        for(int r = MATRIX_ROWS - 1; r >= 0; --r)
-            while(fullLines[r]) {
-                for(int rMove = r; rMove >= 1; --rMove) {
-                    fullLines[rMove] = fullLines[rMove-1];
-                    for(int c = 0; c < MATRIX_COLS; ++c)
-                        _nMatrix[rMove][c] = _nMatrix[rMove-1][c];
-                }
-                fullLines[0] = false;
-                for(c = 0; c < MATRIX_COLS; ++c)
-                    _nMatrix[0][c] = 0;
-                render();
-                refresh();
-                napms(INTERLEAVE*_nDelay);
-            }
+      render ();
+      refresh ();
+      napms (_nDelay);
+      for (int r = MATRIX_ROWS - 1; r >= 0; --r)
+	while (fullLines[r])
+	  {
+	    for (int rMove = r; rMove >= 1; --rMove)
+	      {
+		fullLines[rMove] = fullLines[rMove - 1];
+		for (int c = 0; c < MATRIX_COLS; ++c)
+		  _nMatrix[rMove][c] = _nMatrix[rMove - 1][c];
+	      }
+	    fullLines[0] = false;
+	    for (c = 0; c < MATRIX_COLS; ++c)
+	      _nMatrix[0][c] = 0;
+	    render ();
+	    refresh ();
+	    napms (INTERLEAVE * _nDelay);
+	  }
     }
 }
 
@@ -368,25 +411,28 @@ void hitGround()
  * Motivation of design: It's faster to use the built in array index check than writing your own redu$
  * @return It returns true if collision, false otherwise.
  */
-bool blockCollides()
+bool
+blockCollides ()
 {
-    return blit(doCellBlockCollides, _iBlock, _nRot, _nMRow, _nMCol);
+  return blit (doCellBlockCollides, _iBlock, _nRot, _nMRow, _nMCol);
 }
 
 /**
  * This method wipes out the previously drawn block from the matrix.
  */
-void resetBlock()
+void
+resetBlock ()
 {
-    blit(doCellResetBlock, _iBlockPrev, _nRotPrev, _nMRowPrev, _nMColPrev);
+  blit (doCellResetBlock, _iBlockPrev, _nRotPrev, _nMRowPrev, _nMColPrev);
 }
 
 /**
  * This method draws the current block on the matrix.
  */
-void setBlock()
+void
+setBlock ()
 {
-    blit(doCellSetBlock, _iBlock, _nRot, _nMRow, _nMCol);
+  blit (doCellSetBlock, _iBlock, _nRot, _nMRow, _nMCol);
 }
 
 /**
@@ -395,30 +441,32 @@ void setBlock()
  * Motivation of design: Graphics.fillRect is costly and should be avoided as much as possible.
  * Therefore the previous matrix is stored and only the changes are plotted.
  */
-void render()
+void
+render ()
 {
-    // Render the matrix.
-    //clear();
-    // g.setColor(_nMColors[0]);
-    for(int r = 0; r < MATRIX_ROWS; ++r)
-        for(int c = 0; c < MATRIX_COLS; ++c)
-            if(_nMatrix[r][c] != _nMatrixPrev[r][c]) {
-                //g.setColor(_nMColors[_nMatrix[r][c]]);
-                chtype ch = _nMatrix[r][c] == _iColor ? ACS_CKBOARD : ' ';
-                mvaddch(r, c, ch);
-                _nMatrixPrev[r][c] = _nMatrix[r][c];
-            }
+  // Render the matrix.
+  //clear();
+  // g.setColor(_nMColors[0]);
+  for (int r = 0; r < MATRIX_ROWS; ++r)
+    for (int c = 0; c < MATRIX_COLS; ++c)
+      if (_nMatrix[r][c] != _nMatrixPrev[r][c])
+	{
+	  //g.setColor(_nMColors[_nMatrix[r][c]]);
+	  chtype ch = _nMatrix[r][c] == _iColor ? ACS_CKBOARD : ' ';
+	  mvaddch (r, c, ch);
+	  _nMatrixPrev[r][c] = _nMatrix[r][c];
+	}
 
-    // Render the next block.
-    //g.setColor(_nMColors[0]);
-    //g.setColor(_nMColors[_iColorNext]);
-    // TODO: This might use Blitter.
-    const int BLOCK_ROWS = 2; //_blocks[_iBlockNext].length;
-    const int BLOCK_COLS = 3; // _blocks[_iBlockNext][0].length;
-    for(int r = 0; r < BLOCK_ROWS; ++r)
-        for(int c = 0; c < BLOCK_COLS; ++c)
-            if(_blocks[_iBlockNext][r*BLOCK_COLS+c] != 0)
-                mvaddch(r + 2, c + MATRIX_COLS+1, ACS_CKBOARD);
+  // Render the next block.
+  //g.setColor(_nMColors[0]);
+  //g.setColor(_nMColors[_iColorNext]);
+  // TODO: This might use Blitter.
+  const int BLOCK_ROWS = 2;	//_blocks[_iBlockNext].length;
+  const int BLOCK_COLS = 3;	// _blocks[_iBlockNext][0].length;
+  for (int r = 0; r < BLOCK_ROWS; ++r)
+    for (int c = 0; c < BLOCK_COLS; ++c)
+      if (_blocks[_iBlockNext][r * BLOCK_COLS + c] != 0)
+	mvaddch (r + 2, c + MATRIX_COLS + 1, ACS_CKBOARD);
 }
 
 
@@ -427,66 +475,75 @@ void render()
  * implementation of doCell() in the child class.
  * TODO: If r and c is outside of the matrix or if collision.
  */
-bool blit(bool (*doCell)(int, int), int block, int rot, int row, int col) {
-    const int BLOCK_ROWS = 2,
-              BLOCK_COLS = 3;
+bool
+blit (bool (*doCell) (int, int), int block, int rot, int row, int col)
+{
+  const int BLOCK_ROWS = 2, BLOCK_COLS = 3;
 
-    switch(rot) {
-        case _ROT0:
-            for(int r = 0; r < BLOCK_ROWS; ++r)
-                for(int c = 0; c < BLOCK_COLS; ++c)
-                    if(_blocks[block][r*BLOCK_COLS+c] != 0)
-                        if((*doCell)(row+r, col+c))
-                            return TRUE;
-            break;
-        case _ROT90:
-            for(int r = 0; r < BLOCK_ROWS; ++r)
-                for(int c = 0; c < BLOCK_COLS; ++c)
-                    if(_blocks[block][r*BLOCK_COLS+c] != 0)
-                        if((*doCell)(row+c, col+(BLOCK_COLS-1-r)))
-                            return TRUE;
-            break;
-        case _ROT180:
-            for(int r = 0; r < BLOCK_ROWS; ++r)
-                for(int c = 0; c < BLOCK_COLS; ++c)
-                    if(_blocks[block][r*BLOCK_COLS+c] != 0)
-                        if((*doCell)(row+(BLOCK_COLS-1-r), col+(BLOCK_COLS-1-c)))
-                            return TRUE;
-            break;
-        case _ROT270:
-            for(int r = 0; r < BLOCK_ROWS; ++r)
-                for(int c = 0; c < BLOCK_COLS; ++c)
-                    if(_blocks[block][r*BLOCK_COLS+c] != 0)
-                        if((*doCell)(row+(BLOCK_COLS-1-c), col+r))
-                            return TRUE;
-            break;
+  switch (rot)
+    {
+    case _ROT0:
+      for (int r = 0; r < BLOCK_ROWS; ++r)
+	for (int c = 0; c < BLOCK_COLS; ++c)
+	  if (_blocks[block][r * BLOCK_COLS + c] != 0)
+	    if ((*doCell) (row + r, col + c))
+	      return TRUE;
+      break;
+    case _ROT90:
+      for (int r = 0; r < BLOCK_ROWS; ++r)
+	for (int c = 0; c < BLOCK_COLS; ++c)
+	  if (_blocks[block][r * BLOCK_COLS + c] != 0)
+	    if ((*doCell) (row + c, col + (BLOCK_COLS - 1 - r)))
+	      return TRUE;
+      break;
+    case _ROT180:
+      for (int r = 0; r < BLOCK_ROWS; ++r)
+	for (int c = 0; c < BLOCK_COLS; ++c)
+	  if (_blocks[block][r * BLOCK_COLS + c] != 0)
+	    if ((*doCell)
+		(row + (BLOCK_COLS - 1 - r), col + (BLOCK_COLS - 1 - c)))
+	      return TRUE;
+      break;
+    case _ROT270:
+      for (int r = 0; r < BLOCK_ROWS; ++r)
+	for (int c = 0; c < BLOCK_COLS; ++c)
+	  if (_blocks[block][r * BLOCK_COLS + c] != 0)
+	    if ((*doCell) (row + (BLOCK_COLS - 1 - c), col + r))
+	      return TRUE;
+      break;
     }
-    return FALSE;
+  return FALSE;
 }
 
 /**
  * This doCell has block collision detection.
  */
-bool doCellBlockCollides(int r, int c) {
-    if(_nMatrix[r][c] != 0)
-        return TRUE;
-    if(!(0 <= r && r < MATRIX_ROWS && 0 <= c && c < MATRIX_COLS))
-        return TRUE;
-    return FALSE;
+bool
+doCellBlockCollides (int r, int c)
+{
+  if (_nMatrix[r][c] != 0)
+    return TRUE;
+  if (!(0 <= r && r < MATRIX_ROWS && 0 <= c && c < MATRIX_COLS))
+    return TRUE;
+  return FALSE;
 }
 
 /**
  * This doCell has block reset code.
  */
-bool doCellResetBlock(int r, int c) {
-    _nMatrix[r][c] = 0;
-    return FALSE;
+bool
+doCellResetBlock (int r, int c)
+{
+  _nMatrix[r][c] = 0;
+  return FALSE;
 }
 
 /**
  * This doCell has block set code.
  */
-bool doCellSetBlock(int r, int c) {
-    _nMatrix[r][c] = _iColor;
-    return FALSE;
+bool
+doCellSetBlock (int r, int c)
+{
+  _nMatrix[r][c] = _iColor;
+  return FALSE;
 }
