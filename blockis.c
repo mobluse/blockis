@@ -6,18 +6,21 @@
 // Donations are welcome to PayPal mikael.bonnier@gmail.com.
 // The source code is at <http://www.df.lth.se.orbin.se/~mikaelb/wap/>.
 //
-// Blockis is a game similar to Tetris(R). I didn't read any other tetris code before
-// writing this. I only played and studied the behaviour of a hand held tetris-type game I
-// bought in 1999 (238A, E-8238, All in One, 238 in One, Super King for 238 Game, ...it
-// had many names on the package) and studied the information on rules in Swedish
-// Wikipedia. In 238A Tetris is called Game I, Original Brick Game. My implementation
-// doesn't behave exactly like the one in 238A. E.g. you cannot change speed, level or
-// number of game (i.e. variations). Another difference is that rotation cannot move the
-// block sideways or downwards in my current implementation. There is no sound.
+// Blockis is a game similar to Tetris(R). I didn't read any other tetris
+// code before writing this. I only played and studied the behaviour of a
+// hand held tetris-type game I bought in 1999 (238A, E-8238, All in One,
+// 238 in One, Super King for 238 Game, ...it had many names on the
+// package) and studied the information on rules in Swedish Wikipedia. In
+// 238A Tetris is called Game I, Original Brick Game. My implementation
+// doesn't behave exactly like the one in 238A. E.g. you cannot change
+// speed, level or number of game (i.e. variations). Another difference is
+// that rotation cannot move the block sideways or downwards in my current
+// implementation. There is no sound.
 //
-// It was originally developed in J2ME (Java) using WTK-2.2 and JDK 1.5 on Windows 2000.
-// This C-program was translated from the Java-app into C using nCurses on a Raspberry Pi 2
-// running Raspbian Jessie (Debian) Linux.
+// It was originally developed in J2ME (Java) using WTK-2.2 and JDK 1.5 on
+// Windows 2000. This C-program was translated from the Java-app into C
+// using nCurses on a Raspberry Pi 2 running Raspbian Jessie (Debian)
+// Linux.
 //
 // Revision history:
 // 2007-Jan-15:     v.0.0.2 Java
@@ -60,8 +63,11 @@
  /**/
 // It is compiled on my system by:
 // gcc blockis.c -o blockis -lncurses -std=c99
+//
 #include <ncurses.h>
 #include <sys/param.h>
+#include <time.h>
+#include <stdlib.h>
 void drawBlock ();
 void moveOn ();
 void hitGround ();
@@ -110,7 +116,12 @@ const bool *_blocks[7] = { (bool *) _nBI, (bool *) _nBT, (bool *) _nBO,
   (bool *) _nBL, (bool *) _nBJ, (bool *) _nBS, (bool *) _nBZ
 };
 
-bool _bRunning = TRUE;
+const struct blockRowCol {
+  int rows;
+  int cols;
+} _blockInfo[7] = {{2,4},{2,3},{2,2},{2,3},{2,3},{2,3},{2,3}};
+
+bool _bRunning;
 int _iBlockNext, _iBlock, _iBlockPrev;
 int _nRot, _nRotPrev;
 int _nMRow, _nMCol, _nMRowPrev, _nMColPrev;
@@ -123,6 +134,7 @@ static int _nScore, _nHiScore = 0;
 void
 init ()
 {
+  srand(time(NULL));
   initscr ();
   cbreak ();
   noecho ();
@@ -141,16 +153,7 @@ clearGraphics ()
   // Clear the Graphics.
   clear ();
 
-  //_nMColors[0];
-  //g.fillRect(0, 0, _cw, _ch);
-  //_nMColors[2];
-  //g.drawRect(0, 0, MATRIX_COLS*_nScaleX+1, MATRIX_ROWS*_nScaleY+1);
-  //g.setGrayScale(0xFF);
-  //g.drawString(String.valueOf(_nScore), getWidth(), MATRIX_ROWS*_nScaleY,
-  //     Graphics.BASELINE | Graphics.RIGHT);
   mvprintw (MATRIX_ROWS - 1, MATRIX_COLS + 1, "%d", _nScore);
-  //g.drawString(String.valueOf(_nHiScore), getWidth(), (MATRIX_ROWS-8)*_nScaleY,
-  //     Graphics.BASELINE | Graphics.RIGHT);
   mvprintw (MATRIX_ROWS - 8, MATRIX_COLS + 1, "%d", _nHiScore);
 }
 
@@ -167,8 +170,8 @@ start ()
     for (int c = 0; c < MATRIX_COLS; ++c)
       _nMatrix[r][c] = _nMatrixPrev[r][c] = 0;
   _bNewBlock = true;
-  _iBlockNext = 1;
-  _iColorNext = 1;
+  _iBlockNext = rand()%7;
+  _iColorNext = (char)(rand()%(2 - 1) + 1);
   _bRunning = true;
 }
 
@@ -203,6 +206,7 @@ main ()
       while (_bRunning)
 	{
 	  chtype ks = getch ();
+	  flushinp ();
 	  switch (ks)
 	    {
 	    case KEY_LEFT:
@@ -221,7 +225,6 @@ main ()
 	      stop ();
 	      break;
 	    }
-	  flushinp ();
 	  if (_bNewBlock)
 	    {
 	      _nMRow = _nMRowPrev = 0;
@@ -229,9 +232,9 @@ main ()
 	      _iBlock = _iBlockNext;
 	      if (_iBlock == 0)
 		_nMRow = _nMRowPrev = -1;
-	      _iBlockNext = 1;
+	      _iBlockNext = rand()%7;
 	      _iColor = _iColorNext;
-	      _iColorNext = 1;
+	      _iColorNext = (char)(rand()%(2 - 1) + 1);
 	      _nRot = 0;
 	    }
 	  drawBlock ();
@@ -244,9 +247,10 @@ main ()
 	    {
 	      ++_nMRow;
 	    }
-	  ++loopCount;		// loopCount will wrap around at Integer.MAX_VALUE.
+	  ++loopCount; // loopCount will wrap around at INT_MAX.
 	}
       chtype ks = getch ();
+      flushinp ();
       switch (ks)
 	{
 	case 'S':
@@ -267,9 +271,10 @@ main ()
 }
 
 /**
- * This method calls other methods which draws the falling block on the matrix. If there
- * would be a collision with walls or the ground it tries to prevent it by prohibiting
- * rotation and motion or restricting motion. This method also detects Game Over.
+ * This method calls other methods which draws the falling block on the
+ * matrix. If there would be a collision with walls or the ground it tries
+ * to prevent it by prohibiting rotation and motion or restricting motion.
+ * This method also detects Game Over.
  */
 void
 drawBlock ()
@@ -315,9 +320,8 @@ drawBlock ()
 	{
 	  _nHiScore = MAX (_nHiScore, _nScore);
 	  mvprintw (MATRIX_ROWS - 8, MATRIX_COLS + 1, "%d", _nHiScore);
-	  mvprintw (0, MATRIX_COLS + 1, "%s", "GAME OVER");
+	  mvaddstr (0, MATRIX_COLS + 1, "GAME OVER");
 	  stop ();
-	  //_mobt.gameOver();
 	}
     }
   else
@@ -327,8 +331,8 @@ drawBlock ()
 }
 
 /**
- * This method is called when there is no collision or a collision that has been avoided.
- * It allows the block to continue its fall.
+ * This method is called when there is no collision or a collision that has
+ * been avoided. It allows the block to continue its fall.
  */
 void
 moveOn ()
@@ -342,9 +346,9 @@ moveOn ()
 }
 
 /**
- * This method is called when a block hits the ground and it checks for full rows
- * and compacts according to the rules of standard tetris. Points calculation
- * is done here.
+ * This method is called when a block hits the ground and it checks for full
+ * rows and compacts according to the rules of standard tetris. Points
+ * calculation is done here.
  */
 void
 hitGround ()
@@ -407,8 +411,6 @@ hitGround ()
 
 /**
  * This method checks if a block will collide with the walls or the ground.
- * Notice that exception is used to detect collisions with the walls of the container.
- * Motivation of design: It's faster to use the built in array index check than writing your own redu$
  * @return It returns true if collision, false otherwise.
  */
 bool
@@ -436,9 +438,10 @@ setBlock ()
 }
 
 /**
- * This method renders the tetris matrix on the Graphics with the current block and
- * the next block.
- * Motivation of design: Graphics.fillRect is costly and should be avoided as much as possible.
+ * This method renders the tetris matrix on the Graphics with the current
+ * block and the next block.
+ * Motivation of design: Graphics.fillRect is costly and should be avoided as
+ * much as possible.
  * Therefore the previous matrix is stored and only the changes are plotted.
  */
 void
@@ -461,8 +464,8 @@ render ()
   //g.setColor(_nMColors[0]);
   //g.setColor(_nMColors[_iColorNext]);
   // TODO: This might use Blitter.
-  const int BLOCK_ROWS = 2;	//_blocks[_iBlockNext].length;
-  const int BLOCK_COLS = 3;	// _blocks[_iBlockNext][0].length;
+  const int BLOCK_ROWS = _blockInfo[_iBlockNext].rows,
+            BLOCK_COLS = _blockInfo[_iBlockNext].cols;
   for (int r = 0; r < BLOCK_ROWS; ++r)
     for (int c = 0; c < BLOCK_COLS; ++c)
       if (_blocks[_iBlockNext][r * BLOCK_COLS + c] != 0)
@@ -471,14 +474,15 @@ render ()
 
 
 /**
- * This method can blit the block on to the matrix, but exactly what it does depend on the
- * implementation of doCell() in the child class.
+ * This method can blit the block on to the matrix, but exactly what it does
+ * depend on the implementation of doCell() in the child class.
  * TODO: If r and c is outside of the matrix or if collision.
  */
 bool
 blit (bool (*doCell) (int, int), int block, int rot, int row, int col)
 {
-  const int BLOCK_ROWS = 2, BLOCK_COLS = 3;
+  const int BLOCK_ROWS = _blockInfo[block].rows,
+            BLOCK_COLS = _blockInfo[block].cols;
 
   switch (rot)
     {
