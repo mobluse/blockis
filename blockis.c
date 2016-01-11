@@ -87,6 +87,7 @@ void doCellSetBlock(int r, int c);
 
 #define _MATRIX_ROWS (20)
 #define _MATRIX_COLS (10)
+#define _CA (2)
 const int _nDelay = 100;        // ms
 const int _INTERLEAVE = 8;
 #define _ROT0 (0)
@@ -175,21 +176,21 @@ void clearGraphics()
 {
     // Clear the Graphics.
     clear();
-    for (int c = 1; c <= _MATRIX_COLS; ++c) {
+    for (int c = 1 + _CA; c <= _MATRIX_COLS + _CA; ++c) {
         mvaddch(0, c, ACS_HLINE);
         mvaddch(_MATRIX_ROWS + 1, c, ACS_HLINE);
     }
     for (int r = 1; r <= _MATRIX_ROWS; ++r) {
-        mvaddch(r, 0, ACS_VLINE);
-        mvaddch(r, _MATRIX_COLS + 1, ACS_VLINE);
+        mvaddch(r, _CA, ACS_VLINE);
+        mvaddch(r, _MATRIX_COLS + 1 + _CA, ACS_VLINE);
     }
-    mvaddch(0, 0, ACS_ULCORNER);
-    mvaddch(0, _MATRIX_COLS + 1, ACS_URCORNER);
-    mvaddch(_MATRIX_ROWS + 1, 0, ACS_LLCORNER);
-    mvaddch(_MATRIX_ROWS + 1, _MATRIX_COLS + 1, ACS_LRCORNER);
-    mvprintw(_MATRIX_ROWS, _MATRIX_COLS + 3, "%d", _nScore);
-    mvprintw(_MATRIX_ROWS - 6, _MATRIX_COLS + 3, "%d", _nHiScore);
-    mvaddstr(_MATRIX_ROWS + 3, 1, "W A S D E Q R");
+    mvaddch(0, _CA, ACS_ULCORNER);
+    mvaddch(0, _MATRIX_COLS + 1 + _CA, ACS_URCORNER);
+    mvaddch(_MATRIX_ROWS + 1, _CA, ACS_LLCORNER);
+    mvaddch(_MATRIX_ROWS + 1, _MATRIX_COLS + 1 + _CA, ACS_LRCORNER);
+    mvprintw(_MATRIX_ROWS, _MATRIX_COLS + 3 + _CA, "%d", _nScore);
+    mvprintw(_MATRIX_ROWS - 6, _MATRIX_COLS + 3 + _CA, "%d", _nHiScore);
+    mvaddstr(_MATRIX_ROWS + 3, 1 + _CA, "W A S D E Q R");
 }
 
 /**
@@ -333,8 +334,8 @@ void drawBlock()
             }
         } else {
             _nHiScore = MAX(_nHiScore, _nScore);
-            mvprintw(_MATRIX_ROWS - 6, _MATRIX_COLS + 3, "%d", _nHiScore);
-            mvaddstr(1, _MATRIX_COLS + 3, "GAME OVER");
+            mvprintw(_MATRIX_ROWS - 6, _MATRIX_COLS + 3 + _CA, "%d", _nHiScore);
+            mvaddstr(1, _MATRIX_COLS + 3 + _CA, "GAME OVER");
             stop();
         }
     } else {
@@ -391,7 +392,7 @@ void hitGround()
     const int scores[] = { 40, 100, 300, 1200 };
     if (existsFull) {
         _nScore += (_nLevel + 1) * scores[noOfLines - 1];
-        mvprintw(_MATRIX_ROWS, _MATRIX_COLS + 3, "%d", _nScore);
+        mvprintw(_MATRIX_ROWS, _MATRIX_COLS + 3 + _CA, "%d", _nScore);
 
         render();
         refresh();
@@ -457,7 +458,7 @@ void render()
             if (_nMatrix[r][c] != _nMatrixPrev[r][c]) {
                 chtype ch = _nMatrix[r][c] != 0 ? ACS_CKBOARD : ' ';
                 attron(COLOR_PAIR(_nMatrix[r][c]));     // TODO: Optimize!
-                mvaddch(r + 1, c + 1, ch);
+                mvaddch(r + 1, c + 1 + _CA, ch);
                 attroff(COLOR_PAIR(_nMatrix[r][c]));
                 _nMatrixPrev[r][c] = _nMatrix[r][c];
             }
@@ -465,13 +466,13 @@ void render()
     // TODO: This might use Blitter.
     const int BLOCK_ROWS = _blockInfo[_iBlockNext].rows,
         BLOCK_COLS = _blockInfo[_iBlockNext].cols;
-    mvaddstr(3, _MATRIX_COLS + 3, "      ");
-    mvaddstr(4, _MATRIX_COLS + 3, "      ");
+    mvaddstr(3, _MATRIX_COLS + 3 + _CA, "      ");
+    mvaddstr(4, _MATRIX_COLS + 3 + _CA, "      ");
     attron(COLOR_PAIR(_iColorNext));
     for (int r = 0; r < BLOCK_ROWS; ++r)
         for (int c = 0; c < BLOCK_COLS; ++c)
             if (_blocks[_iBlockNext][r * BLOCK_COLS + c]) {
-                mvaddch(r + 3, c + _MATRIX_COLS + 3, ACS_CKBOARD);
+                mvaddch(r + 3, c + _MATRIX_COLS + 3 + _CA, ACS_CKBOARD);
             }
     attroff(COLOR_PAIR(_iColorNext));
 }
