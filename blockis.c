@@ -117,17 +117,18 @@ const bool _nBZ[2][3] = { {1, 1, 0},
 {0, 1, 1}
 };
 
-#define NOOFBLOCKS (7)
-#define NOOFCOLORS (7)
+#define _NOOFBLOCKS (7)
+#define _NOOFCOLORS (7)
 
-const bool *_blocks[NOOFBLOCKS] = { (bool *) _nBI, (bool *) _nBT, (bool *) _nBO,
+const bool *_blocks[_NOOFBLOCKS] =
+    { (bool *) _nBI, (bool *) _nBT, (bool *) _nBO,
     (bool *) _nBL, (bool *) _nBJ, (bool *) _nBS, (bool *) _nBZ
 };
 
 const struct {
     int rows;
     int cols;
-} _blockInfo[NOOFBLOCKS] = {
+} _blockInfo[_NOOFBLOCKS] = {
     {
     2, 4}, {
     2, 3}, {
@@ -203,8 +204,8 @@ void start()
         for (int c = 0; c < _MATRIX_COLS; ++c)
             _nMatrix[r][c] = _nMatrixPrev[r][c] = 0;
     _bNewBlock = true;
-    _iBlockNext = rand() % NOOFBLOCKS;
-    _iColorNext = (char)(rand() % (NOOFCOLORS - 1) + 1);
+    _iBlockNext = rand() % _NOOFBLOCKS;
+    _iColorNext = (char)(rand() % (_NOOFCOLORS - 1) + 1);
     _bRunning = true;
 }
 
@@ -263,9 +264,9 @@ int main()
                 _iBlock = _iBlockNext;
                 if (_iBlock == 0)
                     _nMRow = _nMRowPrev = -1;
-                _iBlockNext = rand() % NOOFBLOCKS;
+                _iBlockNext = rand() % _NOOFBLOCKS;
                 _iColor = _iColorNext;
-                _iColorNext = (char)(rand() % (NOOFCOLORS - 1) + 1);
+                _iColorNext = (char)(rand() % (_NOOFCOLORS - 1) + 1);
                 _nRot = 0;
             }
             drawBlock();
