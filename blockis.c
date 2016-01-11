@@ -23,13 +23,14 @@
 // Linux.
 //
 // Revision history:
-// 2007-Jan-15:     v.0.0.2 Java
-// 2007-Jan-17:     v.0.0.3 Java
-// 2007-Jan-19:     v.0.1.0 Java
-// 2007-Jan-20:     v.0.1.1 Java
-// 2007-Feb-21:     v.0.1.2 Java
-// 2008-May-23:     v.0.1.3 Java
-// 2016-Jan-10:     v.0.1.4 C (Work in progress)
+// 2007-Jan-15:     v.0.0.2   Java
+// 2007-Jan-17:     v.0.0.3   Java
+// 2007-Jan-19:     v.0.1.0   Java
+// 2007-Jan-20:     v.0.1.1   Java
+// 2007-Feb-21:     v.0.1.2   Java
+// 2008-May-23:     v.0.1.3   Java
+// 2016-Jan-10:     v.0.1.3a  C
+// 2016-Jan-11:     v.0.1.3b  C (Work in progress)
 //
 // Suggestions, improvements, and bug-reports
 // are always welcome to:
@@ -112,14 +113,34 @@ const bool _nBZ[2][3] = { {1, 1, 0},
 {0, 1, 1}
 };
 
-const bool *_blocks[7] = { (bool *) _nBI, (bool *) _nBT, (bool *) _nBO,
+#define NOOFBLOCKS (7)
+#define NOOFCOLORS (7)
+
+const bool *_blocks[NOOFBLOCKS] =
+  { (bool *) _nBI, (bool *) _nBT, (bool *) _nBO,
   (bool *) _nBL, (bool *) _nBJ, (bool *) _nBS, (bool *) _nBZ
 };
 
-const struct blockRowCol {
+const struct blockRowCol
+{
   int rows;
   int cols;
-} _blockInfo[7] = {{2,4},{2,3},{2,2},{2,3},{2,3},{2,3},{2,3}};
+} _blockInfo[NOOFBLOCKS] =
+{
+  {
+  2, 4},
+  {
+  2, 3},
+  {
+  2, 2},
+  {
+  2, 3},
+  {
+  2, 3},
+  {
+  2, 3},
+  {
+2, 3}};
 
 bool _bRunning;
 int _iBlockNext, _iBlock, _iBlockPrev;
@@ -134,7 +155,7 @@ static int _nScore, _nHiScore = 0;
 void
 init ()
 {
-  srand(time(NULL));
+  srand (time (NULL));
   initscr ();
   cbreak ();
   noecho ();
@@ -142,6 +163,13 @@ init ()
   nodelay (stdscr, TRUE);
   keypad (stdscr, TRUE);
   curs_set (0);
+  start_color ();
+  init_pair (1, COLOR_RED, COLOR_RED);
+  init_pair (2, COLOR_GREEN, COLOR_GREEN);
+  init_pair (3, COLOR_YELLOW, COLOR_YELLOW);
+  init_pair (4, COLOR_BLUE, COLOR_BLUE);
+  init_pair (5, COLOR_MAGENTA, COLOR_MAGENTA);
+  init_pair (6, COLOR_CYAN, COLOR_CYAN);
 }
 
 /**
@@ -152,9 +180,22 @@ clearGraphics ()
 {
   // Clear the Graphics.
   clear ();
-
-  mvprintw (MATRIX_ROWS - 1, MATRIX_COLS + 1, "%d", _nScore);
-  mvprintw (MATRIX_ROWS - 8, MATRIX_COLS + 1, "%d", _nHiScore);
+  for (int c = 1; c <= MATRIX_COLS; ++c)
+    {
+      mvaddch (0, c, '-');
+      mvaddch (MATRIX_ROWS + 1, c, '-');
+    }
+  for (int r = 1; r <= MATRIX_ROWS; ++r)
+    {
+      mvaddch (r, 0, '|');
+      mvaddch (r, MATRIX_COLS + 1, '|');
+    }
+  mvaddch (0, 0, '+');
+  mvaddch (MATRIX_ROWS + 1, 0, '+');
+  mvaddch (0, MATRIX_COLS + 1, '+');
+  mvaddch (MATRIX_ROWS + 1, MATRIX_COLS + 1, '+');
+  mvprintw (MATRIX_ROWS, MATRIX_COLS + 3, "%d", _nScore);
+  mvprintw (MATRIX_ROWS - 6, MATRIX_COLS + 3, "%d", _nHiScore);
 }
 
 /**
@@ -170,8 +211,8 @@ start ()
     for (int c = 0; c < MATRIX_COLS; ++c)
       _nMatrix[r][c] = _nMatrixPrev[r][c] = 0;
   _bNewBlock = true;
-  _iBlockNext = rand()%7;
-  _iColorNext = (char)(rand()%(2 - 1) + 1);
+  _iBlockNext = rand () % NOOFBLOCKS;
+  _iColorNext = (char) (rand () % (NOOFCOLORS - 1) + 1);
   _bRunning = true;
 }
 
@@ -232,9 +273,9 @@ main ()
 	      _iBlock = _iBlockNext;
 	      if (_iBlock == 0)
 		_nMRow = _nMRowPrev = -1;
-	      _iBlockNext = rand()%7;
+	      _iBlockNext = rand () % NOOFBLOCKS;
 	      _iColor = _iColorNext;
-	      _iColorNext = (char)(rand()%(2 - 1) + 1);
+	      _iColorNext = (char) (rand () % (NOOFCOLORS - 1) + 1);
 	      _nRot = 0;
 	    }
 	  drawBlock ();
@@ -247,7 +288,7 @@ main ()
 	    {
 	      ++_nMRow;
 	    }
-	  ++loopCount; // loopCount will wrap around at INT_MAX.
+	  ++loopCount;		// loopCount will wrap around at INT_MAX.
 	}
       chtype ks = getch ();
       flushinp ();
@@ -266,8 +307,6 @@ main ()
 	}
       napms (_nDelay);
     }
-  endwin ();
-  return 0;
 }
 
 /**
@@ -319,8 +358,8 @@ drawBlock ()
       else
 	{
 	  _nHiScore = MAX (_nHiScore, _nScore);
-	  mvprintw (MATRIX_ROWS - 8, MATRIX_COLS + 1, "%d", _nHiScore);
-	  mvaddstr (0, MATRIX_COLS + 1, "GAME OVER");
+	  mvprintw (MATRIX_ROWS - 6, MATRIX_COLS + 3, "%d", _nHiScore);
+	  mvaddstr (1, MATRIX_COLS + 3, "GAME OVER");
 	  stop ();
 	}
     }
@@ -385,7 +424,7 @@ hitGround ()
   if (existsFull)
     {
       _nScore += (_nLevel + 1) * scores[noOfLines - 1];
-      mvprintw (MATRIX_ROWS - 1, MATRIX_COLS + 1, "%d", _nScore);
+      mvprintw (MATRIX_ROWS, MATRIX_COLS + 3, "%d", _nScore);
 
       render ();
       refresh ();
@@ -448,28 +487,31 @@ void
 render ()
 {
   // Render the matrix.
-  //clear();
-  // g.setColor(_nMColors[0]);
   for (int r = 0; r < MATRIX_ROWS; ++r)
     for (int c = 0; c < MATRIX_COLS; ++c)
       if (_nMatrix[r][c] != _nMatrixPrev[r][c])
 	{
-	  //g.setColor(_nMColors[_nMatrix[r][c]]);
-	  chtype ch = _nMatrix[r][c] == _iColor ? ACS_CKBOARD : ' ';
-	  mvaddch (r, c, ch);
+	  chtype ch = _nMatrix[r][c] != 0 ? ACS_CKBOARD : ' ';
+	  attron (COLOR_PAIR (_nMatrix[r][c]));	// TODO: Optimize!
+	  mvaddch (r + 1, c + 1, ch);
+	  attroff (COLOR_PAIR (_nMatrix[r][c]));
 	  _nMatrixPrev[r][c] = _nMatrix[r][c];
 	}
 
   // Render the next block.
-  //g.setColor(_nMColors[0]);
-  //g.setColor(_nMColors[_iColorNext]);
   // TODO: This might use Blitter.
   const int BLOCK_ROWS = _blockInfo[_iBlockNext].rows,
-            BLOCK_COLS = _blockInfo[_iBlockNext].cols;
+    BLOCK_COLS = _blockInfo[_iBlockNext].cols;
+  mvaddstr (3, MATRIX_COLS + 3, "      ");
+  mvaddstr (4, MATRIX_COLS + 3, "      ");
+  attron (COLOR_PAIR (_iColorNext));
   for (int r = 0; r < BLOCK_ROWS; ++r)
     for (int c = 0; c < BLOCK_COLS; ++c)
-      if (_blocks[_iBlockNext][r * BLOCK_COLS + c] != 0)
-	mvaddch (r + 2, c + MATRIX_COLS + 1, ACS_CKBOARD);
+      if (_blocks[_iBlockNext][r * BLOCK_COLS + c])
+	{
+	  mvaddch (r + 3, c + MATRIX_COLS + 3, ACS_CKBOARD);
+	}
+  attroff (COLOR_PAIR (_iColorNext));
 }
 
 
@@ -482,7 +524,7 @@ bool
 blit (bool (*doCell) (int, int), int block, int rot, int row, int col)
 {
   const int BLOCK_ROWS = _blockInfo[block].rows,
-            BLOCK_COLS = _blockInfo[block].cols;
+    BLOCK_COLS = _blockInfo[block].cols;
 
   switch (rot)
     {
