@@ -1,5 +1,5 @@
 # Blockis
-Blockis is similar to Tetris. C99- &amp; J2ME-version.
+Blockis is similar to Tetris. C99- &amp; J2ME-versions included.
 
 C99-version of Blockis runs in a terminal (Linux console). I made this mainly to educate in C,
 but also as a preparation for an Arduino-program.
