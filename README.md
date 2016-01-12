@@ -5,3 +5,5 @@ C99-version of Blockis runs in a terminal (Linux console). I made this mainly to
 but also as a preparation for an Arduino-program.
 
 A video of the running program: https://youtu.be/RkcHImd9MX0
+
+Discuss this resource in Swedish (på svenska): https://groups.google.com/forum/#!topic/coderdojo-lund/5CGq0gMiQac
