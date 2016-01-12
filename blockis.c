@@ -190,7 +190,7 @@ void clearGraphics()
     mvaddch(_MATRIX_ROWS + 1, _MATRIX_COLS + 1 + _CA, ACS_LRCORNER);
     mvprintw(_MATRIX_ROWS, _MATRIX_COLS + 3 + _CA, "%d", _nScore);
     mvprintw(_MATRIX_ROWS - 6, _MATRIX_COLS + 3 + _CA, "%d", _nHiScore);
-    mvaddstr(_MATRIX_ROWS + 3, 1 + _CA, "W A S D E Q R");
+    mvaddstr(_MATRIX_ROWS + 3, 1 + _CA, "W A S D E Q");
 }
 
 /**
@@ -256,6 +256,7 @@ int main()
                 break;
             case 'q':
             case 'Q':
+            case KEY_END:
                 stop();
                 break;
             }
@@ -284,14 +285,17 @@ int main()
         chtype ks = getch();
         flushinp();
         switch (ks) {
+        case KEY_DOWN:
         case 's':
             start();
             break;
-        case 'r':
+        case KEY_DC:
+        case 'e':
             resume();
             break;
         case 'q':
         case 'Q':
+        case KEY_END:
             endwin();
             return 0;
             break;
