@@ -1,3 +1,3 @@
 #!/bin/sh
 # sudo apt-get install libncurses5-dev
-gcc blockis.c -o blockis -lncurses -std=c99
+p=blockis; gcc $p.c -o $p -lncurses -std=c99

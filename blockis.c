@@ -65,7 +65,7 @@
 /////////////////////////////////////////////////////////////////////
 
 // It is compiled on my system by:
-// gcc blockis.c -o blockis -lncurses -std=c99
+// p=blockis; gcc $p.c -o $p -lncurses -std=c99
 //
 /* indent -nbad -bap -nbc -bbo -hnl -br -brs -c33 -cd33 -ncdb -ce -ci4 -cli0 -d0 -di1 -nfc1 -i4 -ip0 -l80 -lp -npcs -nprs -npsl -sai -saf -saw -ncs -nsc -sob -nfca -cp33 -ss -ts8 -il1 --no-tabs blockis.c  */
 #include <ncurses.h>
@@ -73,6 +73,11 @@
 #include <time.h>
 #include <stdlib.h>
 #include <setjmp.h>
+void init();
+void clearGraphics();
+void start();
+void resume();
+void stop();
 void drawBlock();
 void moveOn();
 void hitGround();
@@ -150,6 +155,84 @@ static int _nLevel = 0;
 static int _nScore, _nHiScore = 0;
 static jmp_buf _exceptionEnv;
 
+int main(int argc, char* argv[])
+{
+    int loopCount = 1;
+
+    init();
+    start();
+
+    for (;;) {
+        while (_bRunning) {
+            chtype ks = getch();
+            flushinp();
+            switch (ks) {
+            case KEY_LEFT:
+            case 'a':
+                --_nMCol;
+                break;
+            case KEY_RIGHT:
+            case 'd':
+                ++_nMCol;
+                break;
+            case KEY_UP:
+            case 'w':
+                _nRot = _nRot >= 3 ? 0 : _nRot + 1;
+                break;
+            case KEY_DC:
+            case 'e':
+                _nRot = _nRot <= 0 ? 3 : _nRot - 1;
+                break;
+            case KEY_END:
+            case 'q':
+            case 'Q':
+                stop();
+                break;
+            }
+            if (_bNewBlock) {
+                _nMRow = _nMRowPrev = 0;
+                _nMCol = _nMColPrev = _MATRIX_COLS/2 - 2;
+                _iBlock = _iBlockNext;
+                if (_iBlock == 0)
+                    _nMRow = _nMRowPrev = -1;
+                _iBlockNext = rand() % _NOOFBLOCKS;
+                _iColor = _iColorNext;
+                _iColorNext = (char)(rand() % (_NOOFCOLORS - 1) + 1);
+                _nRot = 0;
+            }
+            drawBlock();
+
+            render();
+            refresh();
+            napms(_nDelay);
+
+            if (ks == KEY_DOWN || ks == 's' || loopCount % _INTERLEAVE == 0) {
+                ++_nMRow;
+            }
+            ++loopCount;        // loopCount will wrap around at INT_MAX.
+        }
+        chtype ks = getch();
+        flushinp();
+        switch (ks) {
+        case KEY_DOWN:
+        case 's':
+            start();
+            break;
+        case KEY_DC:
+        case 'e':
+            resume();
+            break;
+        case KEY_END:
+        case 'q':
+        case 'Q':
+            endwin();
+            return 0;
+            break;
+        }
+        napms(_nDelay);
+    }
+}
+
 void init()
 {
     srand(time(NULL));
@@ -224,84 +307,6 @@ void resume()
 void stop()
 {
     _bRunning = false;
-}
-
-int main()
-{
-    int loopCount = 1;
-
-    init();
-    start();
-
-    for (;;) {
-        while (_bRunning) {
-            chtype ks = getch();
-            flushinp();
-            switch (ks) {
-            case KEY_LEFT:
-            case 'a':
-                --_nMCol;
-                break;
-            case KEY_RIGHT:
-            case 'd':
-                ++_nMCol;
-                break;
-            case KEY_UP:
-            case 'w':
-                _nRot = _nRot >= 3 ? 0 : _nRot + 1;
-                break;
-            case KEY_DC:
-            case 'e':
-                _nRot = _nRot <= 0 ? 3 : _nRot - 1;
-                break;
-            case 'q':
-            case 'Q':
-            case KEY_END:
-                stop();
-                break;
-            }
-            if (_bNewBlock) {
-                _nMRow = _nMRowPrev = 0;
-                _nMCol = _nMColPrev = 3;
-                _iBlock = _iBlockNext;
-                if (_iBlock == 0)
-                    _nMRow = _nMRowPrev = -1;
-                _iBlockNext = rand() % _NOOFBLOCKS;
-                _iColor = _iColorNext;
-                _iColorNext = (char)(rand() % (_NOOFCOLORS - 1) + 1);
-                _nRot = 0;
-            }
-            drawBlock();
-
-            render();
-            refresh();
-            napms(_nDelay);
-
-            if (ks == KEY_DOWN || ks == 's' || loopCount % _INTERLEAVE == 0) {
-                ++_nMRow;
-            }
-            ++loopCount;        // loopCount will wrap around at INT_MAX.
-        }
-        chtype ks = getch();
-        flushinp();
-        switch (ks) {
-        case KEY_DOWN:
-        case 's':
-            start();
-            break;
-        case KEY_DC:
-        case 'e':
-            resume();
-            break;
-        case 'q':
-        case 'Q':
-        case KEY_END:
-            endwin();
-            return 0;
-            break;
-        }
-        napms(_nDelay);
-    }
 }
 
 /**
