@@ -159,7 +159,7 @@ jmp_buf _exceptionEnv;
 // SPI
 int _fd;
 
-int main(int argc, char* argv[])
+int main(int argc, char *argv[])
 {
     int loopCount = 1;
 
@@ -195,7 +195,7 @@ int main(int argc, char* argv[])
             }
             if (_bNewBlock) {
                 _nMRow = _nMRowPrev = 0;
-                _nMCol = _nMColPrev = _MATRIX_COLS/2 - 2;
+                _nMCol = _nMColPrev = _MATRIX_COLS / 2 - 2;
                 _iBlock = _iBlockNext;
                 if (_iBlock == 0)
                     _nMRow = _nMRowPrev = -1;
@@ -484,7 +484,7 @@ void render()
             if (_nMatrix[r][c] != 0)
                 col |= 0x80;
         }
-        col_write(_fd, (uint8_t)(c+1), col);
+        col_write(_fd, (uint8_t) (c + 1), col);
     }
 
     // Render the next block.
