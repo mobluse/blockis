@@ -1,6 +1,6 @@
 /////////////////////////////////////////////////////////////////////
 //
-// Blockis by M.O.B. as nCurses-program in C for Linux.
+// Blockis by M.O.B. as MAX7219 8x8 LED matrix program  in C for Linux.
 // Copyright (C) 2007, 2016 by Mikael O. Bonnier, Lund, Sweden.
 // License: GNU GPL v3 or later, http://www.gnu.org/licenses/gpl-3.0.txt
 // Donations are welcome to PayPal mikael.bonnier@gmail.com.
@@ -90,8 +90,17 @@ void doCellBlockCollides(int r, int c);
 void doCellResetBlock(int r, int c);
 void doCellSetBlock(int r, int c);
 
-#define _MATRIX_ROWS (20)
-#define _MATRIX_COLS (10)
+// SPI
+#include <unistd.h>
+#include <fcntl.h>
+#include <sys/ioctl.h>
+#include <linux/spi/spidev.h>
+int init_max7219();
+void clear_led_matrix();
+void col_write(int fd, uint8_t max_address, uint8_t max_data);
+
+#define _MATRIX_ROWS (8)
+#define _MATRIX_COLS (8)
 #define _CA (2)
 const int _nDelay = 100;        // ms
 const int _INTERLEAVE = 8;
@@ -151,11 +160,14 @@ int _nMRow, _nMCol, _nMRowPrev, _nMColPrev;
 char _iColorNext;
 char _iColor;
 bool _bNewBlock;
-static int _nLevel = 0;
-static int _nScore, _nHiScore = 0;
-static jmp_buf _exceptionEnv;
+int _nLevel = 0;
+int _nScore, _nHiScore = 0;
+jmp_buf _exceptionEnv;
 
-int main(int argc, char *argv[])
+// SPI
+int _fd;
+
+int main(int argc, char* argv[])
 {
     int loopCount = 1;
 
@@ -191,7 +203,7 @@ int main(int argc, char *argv[])
             }
             if (_bNewBlock) {
                 _nMRow = _nMRowPrev = 0;
-                _nMCol = _nMColPrev = _MATRIX_COLS / 2 - 2;
+                _nMCol = _nMColPrev = _MATRIX_COLS/2 - 2;
                 _iBlock = _iBlockNext;
                 if (_iBlock == 0)
                     _nMRow = _nMRowPrev = -1;
@@ -226,6 +238,8 @@ int main(int argc, char *argv[])
         case 'q':
         case 'Q':
             endwin();
+            clear_led_matrix();
+            close(_fd);
             return 0;
             break;
         }
@@ -235,6 +249,7 @@ int main(int argc, char *argv[])
 
 void init()
 {
+    init_max7219();
     srand(time(NULL));
     initscr();
     cbreak();
@@ -462,8 +477,9 @@ void setBlock()
 void render()
 {
     // Render the matrix.
-    for (int r = 0; r < _MATRIX_ROWS; ++r)
-        for (int c = 0; c < _MATRIX_COLS; ++c)
+    for (int c = 0; c < _MATRIX_COLS; ++c) {
+        uint8_t col = 0x00B;
+        for (int r = 0; r < _MATRIX_ROWS; ++r) {
             if (_nMatrix[r][c] != _nMatrixPrev[r][c]) {
                 chtype ch = _nMatrix[r][c] != 0 ? ACS_CKBOARD : ' ';
                 attron(COLOR_PAIR(_nMatrix[r][c]));     // TODO: Optimize!
@@ -471,6 +487,13 @@ void render()
                 attroff(COLOR_PAIR(_nMatrix[r][c]));
                 _nMatrixPrev[r][c] = _nMatrix[r][c];
             }
+            col >>= 1;
+            col |= _nMatrix[r][c] != 0 ? 0x80 : 0x00;
+        }
+        col_write(_fd, (uint8_t)(c+1), col);
+    }
+
+
     // Render the next block.
     // TODO: This might use Blitter.
     const int BLOCK_ROWS = _blockInfo[_iBlockNext].rows,
@@ -550,4 +573,95 @@ void doCellResetBlock(int r, int c)
 void doCellSetBlock(int r, int c)
 {
     _nMatrix[r][c] = _iColor;
+}
+
+//-------------------------------------------------------------------
+
+/**
+ * SPI to MAX7219
+ */
+
+const char *device = "/dev/spidev0.0";
+uint8_t mode = 0;
+uint8_t bits = 8;
+uint32_t speed = 200000;
+
+void pabort(const char *s)
+{
+   perror(s);
+   abort();
+}
+
+void col_write(int fd, uint8_t col, uint8_t data)
+{
+   uint8_t tx[] = { col, data };
+   write(fd, tx, 2);
+}
+
+void init_spi(int fd)
+{
+// See "[SPI] LED Matrix using Maxim MAX7221" by Klaas
+// https://www.raspberrypi.org/forums/viewtopic.php?t=41713
+   int ret = 0;
+
+   /** spi mode **/
+   ret = ioctl(fd, SPI_IOC_WR_MODE, &mode);
+   if (ret == -1)
+      pabort("can't set spi mode");
+
+   ret = ioctl(fd, SPI_IOC_RD_MODE, &mode);
+   if (ret == -1)
+      pabort("can't get spi mode");
+
+   /** bits per word **/
+   ret = ioctl(fd, SPI_IOC_WR_BITS_PER_WORD, &bits);
+   if (ret == -1)
+      pabort("can't set bits per word");
+
+   ret = ioctl(fd, SPI_IOC_RD_BITS_PER_WORD, &bits);
+   if (ret == -1)
+      pabort("can't get bits per word");
+
+   /** max speed hz **/
+   ret = ioctl(fd, SPI_IOC_WR_MAX_SPEED_HZ, &speed);
+   if (ret == -1)
+      pabort("can't set max speed hz");
+
+   ret = ioctl(fd, SPI_IOC_RD_MAX_SPEED_HZ, &speed);
+   if (ret == -1)
+      pabort("can't get max speed hz");
+}
+
+void clear_led_matrix() {
+   for (uint8_t c = 1; c <= 8; c++) {
+       col_write(_fd, c, 0x00);
+   }
+}
+
+int init_max7219()
+{
+   _fd = open(device, O_RDWR);
+
+   if (_fd < 0)
+      pabort("can't open device");
+
+   init_spi(_fd);
+
+   clear_led_matrix();
+
+   // Self test
+   col_write(_fd, 0x0F, 0x01);
+   napms(500);
+   col_write(_fd, 0x0F, 0x00);
+   napms(500);
+
+   // Initialize LED matrix
+   col_write(_fd, 0x0C, 0x01); // Normal operation
+   col_write(_fd, 0x0B, 0x07); // Scan Limit (all digits)
+   col_write(_fd, 0x0A, 0x07); // Intensity
+   col_write(_fd, 0x09, 0x00); // Decode mode (off)
+
+   clear_led_matrix();
+
+   return 0;
 }
