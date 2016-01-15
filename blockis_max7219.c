@@ -30,7 +30,7 @@
 // 2007-Feb-21:     v.0.1.2   Java
 // 2008-May-23:     v.0.1.3   Java
 // 2016-Jan-10:     v.0.1.3a  C
-// 2016-Jan-11:     v.0.1.3b  C (Work in progress)
+// 2016-Jan-15:     v.0.1.3b  C (Work in progress)
 //
 // Suggestions, improvements, and bug-reports
 // are always welcome to:
@@ -65,7 +65,7 @@
 /////////////////////////////////////////////////////////////////////
 
 // It is compiled on my system by:
-// p=blockis; gcc $p.c -o $p -lncurses -std=c99
+// p=blockis_max7219; gcc $p.c -o $p -lncurses -std=c99
 //
 /* indent -nbad -bap -nbc -bbo -hnl -br -brs -c33 -cd33 -ncdb -ce -ci4 -cli0 -d0 -di1 -nfc1 -i4 -ip0 -l80 -lp -npcs -nprs -npsl -sai -saf -saw -ncs -nsc -sob -nfca -cp33 -ss -ts8 -il1 --no-tabs blockis.c  */
 #include <ncurses.h>
@@ -73,6 +73,7 @@
 #include <time.h>
 #include <stdlib.h>
 #include <setjmp.h>
+#include "max7219.h"
 void init();
 void clearGraphics();
 void start();
@@ -89,15 +90,6 @@ void blit(void (*doCell) (int, int), int block, int rot, int row, int col);
 void doCellBlockCollides(int r, int c);
 void doCellResetBlock(int r, int c);
 void doCellSetBlock(int r, int c);
-
-// SPI
-#include <unistd.h>
-#include <fcntl.h>
-#include <sys/ioctl.h>
-#include <linux/spi/spidev.h>
-int init_max7219();
-void clear_led_matrix();
-void col_write(int fd, uint8_t max_address, uint8_t max_data);
 
 #define _MATRIX_ROWS (8)
 #define _MATRIX_COLS (8)
@@ -238,7 +230,7 @@ int main(int argc, char* argv[])
         case 'q':
         case 'Q':
             endwin();
-            clear_led_matrix();
+            clear_led_matrix(_fd);
             close(_fd);
             return 0;
             break;
@@ -249,7 +241,7 @@ int main(int argc, char* argv[])
 
 void init()
 {
-    init_max7219();
+    _fd = init_max7219();
     srand(time(NULL));
     initscr();
     cbreak();
@@ -298,6 +290,7 @@ void start()
 {
     _nScore = 0;
     clearGraphics();
+    clear_led_matrix(_fd);
     // Reset the matrix.
     for (int r = 0; r < _MATRIX_ROWS; ++r)
         for (int c = 0; c < _MATRIX_COLS; ++c)
@@ -478,7 +471,7 @@ void render()
 {
     // Render the matrix.
     for (int c = 0; c < _MATRIX_COLS; ++c) {
-        uint8_t col = 0x00B;
+        uint8_t col = 0x00;
         for (int r = 0; r < _MATRIX_ROWS; ++r) {
             if (_nMatrix[r][c] != _nMatrixPrev[r][c]) {
                 chtype ch = _nMatrix[r][c] != 0 ? ACS_CKBOARD : ' ';
@@ -488,11 +481,11 @@ void render()
                 _nMatrixPrev[r][c] = _nMatrix[r][c];
             }
             col >>= 1;
-            col |= _nMatrix[r][c] != 0 ? 0x80 : 0x00;
+            if (_nMatrix[r][c] != 0)
+                col |= 0x80;
         }
         col_write(_fd, (uint8_t)(c+1), col);
     }
-
 
     // Render the next block.
     // TODO: This might use Blitter.
@@ -573,95 +566,4 @@ void doCellResetBlock(int r, int c)
 void doCellSetBlock(int r, int c)
 {
     _nMatrix[r][c] = _iColor;
-}
-
-//-------------------------------------------------------------------
-
-/**
- * SPI to MAX7219
- */
-
-const char *device = "/dev/spidev0.0";
-uint8_t mode = 0;
-uint8_t bits = 8;
-uint32_t speed = 200000;
-
-void pabort(const char *s)
-{
-   perror(s);
-   abort();
-}
-
-void col_write(int fd, uint8_t col, uint8_t data)
-{
-   uint8_t tx[] = { col, data };
-   write(fd, tx, 2);
-}
-
-void init_spi(int fd)
-{
-// See "[SPI] LED Matrix using Maxim MAX7221" by Klaas
-// https://www.raspberrypi.org/forums/viewtopic.php?t=41713
-   int ret = 0;
-
-   /** spi mode **/
-   ret = ioctl(fd, SPI_IOC_WR_MODE, &mode);
-   if (ret == -1)
-      pabort("can't set spi mode");
-
-   ret = ioctl(fd, SPI_IOC_RD_MODE, &mode);
-   if (ret == -1)
-      pabort("can't get spi mode");
-
-   /** bits per word **/
-   ret = ioctl(fd, SPI_IOC_WR_BITS_PER_WORD, &bits);
-   if (ret == -1)
-      pabort("can't set bits per word");
-
-   ret = ioctl(fd, SPI_IOC_RD_BITS_PER_WORD, &bits);
-   if (ret == -1)
-      pabort("can't get bits per word");
-
-   /** max speed hz **/
-   ret = ioctl(fd, SPI_IOC_WR_MAX_SPEED_HZ, &speed);
-   if (ret == -1)
-      pabort("can't set max speed hz");
-
-   ret = ioctl(fd, SPI_IOC_RD_MAX_SPEED_HZ, &speed);
-   if (ret == -1)
-      pabort("can't get max speed hz");
-}
-
-void clear_led_matrix() {
-   for (uint8_t c = 1; c <= 8; c++) {
-       col_write(_fd, c, 0x00);
-   }
-}
-
-int init_max7219()
-{
-   _fd = open(device, O_RDWR);
-
-   if (_fd < 0)
-      pabort("can't open device");
-
-   init_spi(_fd);
-
-   clear_led_matrix();
-
-   // Self test
-   col_write(_fd, 0x0F, 0x01);
-   napms(500);
-   col_write(_fd, 0x0F, 0x00);
-   napms(500);
-
-   // Initialize LED matrix
-   col_write(_fd, 0x0C, 0x01); // Normal operation
-   col_write(_fd, 0x0B, 0x07); // Scan Limit (all digits)
-   col_write(_fd, 0x0A, 0x07); // Intensity
-   col_write(_fd, 0x09, 0x00); // Decode mode (off)
-
-   clear_led_matrix();
-
-   return 0;
 }
