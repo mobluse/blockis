@@ -4,7 +4,7 @@
 // Copyright (C) 2007, 2016 by Mikael O. Bonnier, Lund, Sweden.
 // License: GNU GPL v3 or later, http://www.gnu.org/licenses/gpl-3.0.txt
 // Donations are welcome to PayPal mikael.bonnier@gmail.com.
-// The source code is at <http://www.df.lth.se.orbin.se/~mikaelb/wap/>.
+// The source code is at <https://github.com/mobluse/blockis>.
 //
 // Blockis is a game similar to Tetris(R). I didn't read any other tetris
 // code before writing this. I only played and studied the behaviour of a
@@ -30,7 +30,7 @@
 // 2007-Feb-21:     v.0.1.2   Java
 // 2008-May-23:     v.0.1.3   Java
 // 2016-Jan-10:     v.0.1.3a  C
-// 2016-Jan-15:     v.0.1.3b  C (Work in progress)
+// 2016-Jan-20:     v.0.1.3   C
 //
 // Suggestions, improvements, and bug-reports
 // are always welcome to:
@@ -64,10 +64,10 @@
 // Mikael O. Bonnier
 /////////////////////////////////////////////////////////////////////
 
-// It is compiled on my system by:
-// p=blockis_max7219; gcc $p.c -o $p -lncurses -std=c99
-//
-/* indent -nbad -bap -nbc -bbo -hnl -br -brs -c33 -cd33 -ncdb -ce -ci4 -cli0 -d0 -di1 -nfc1 -i4 -ip0 -l80 -lp -npcs -nprs -npsl -sai -saf -saw -ncs -nsc -sob -nfca -cp33 -ss -ts8 -il1 --no-tabs blockis.c  */
+// Install and configure the Raspberry Pi using ./install.sh shell-script.
+// Compile using ./rebuild.sh.
+// Indent after editing using ./indent.sh.
+ /**/
 #include <ncurses.h>
 #include <sys/param.h>
 #include <time.h>
@@ -210,9 +210,8 @@ int main(int argc, char *argv[])
             refresh();
             napms(_nDelay);
 
-            if (ks == KEY_DOWN || ks == 's' || loopCount % _INTERLEAVE == 0) {
+            if (ks == KEY_DOWN || ks == 's' || loopCount % _INTERLEAVE == 0)
                 ++_nMRow;
-            }
             ++loopCount;        // loopCount will wrap around at INT_MAX.
         }
         chtype ks = getch();
@@ -327,7 +326,7 @@ void drawBlock()
 {
     if (!_bNewBlock)
         resetBlock();
-    if (blockCollides()) {
+    if (blockCollides())
         if (!_bNewBlock) {
             if (_nRot != _nRotPrev) {
                 _nRot = _nRotPrev;
@@ -354,10 +353,8 @@ void drawBlock()
             mvprintw(_MATRIX_ROWS - 6, _MATRIX_COLS + 3 + _CA, "%d", _nHiScore);
             mvaddstr(1, _MATRIX_COLS + 3 + _CA, "GAME OVER");
             stop();
-        }
-    } else {
+    } else
         moveOn();
-    }
 }
 
 /**
@@ -496,9 +493,8 @@ void render()
     attron(COLOR_PAIR(_iColorNext));
     for (int r = 0; r < BLOCK_ROWS; ++r)
         for (int c = 0; c < BLOCK_COLS; ++c)
-            if (_blocks[_iBlockNext][r * BLOCK_COLS + c]) {
+            if (_blocks[_iBlockNext][r * BLOCK_COLS + c])
                 mvaddch(r + 3, c + _MATRIX_COLS + 3 + _CA, ACS_CKBOARD);
-            }
     attroff(COLOR_PAIR(_iColorNext));
 }
 

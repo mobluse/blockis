@@ -1,10 +1,10 @@
 /////////////////////////////////////////////////////////////////////
 //
-// Blockis by M.O.B. as nCurses-program in C for Linux.
+// Blockis by M.O.B. as Arduino-program in C/C++.
 // Copyright (C) 2007, 2016 by Mikael O. Bonnier, Lund, Sweden.
 // License: GNU GPL v3 or later, http://www.gnu.org/licenses/gpl-3.0.txt
 // Donations are welcome to PayPal mikael.bonnier@gmail.com.
-// The source code is at <http://www.df.lth.se.orbin.se/~mikaelb/wap/>.
+// The source code is at <https://github.com/mobluse/blockis>.
 //
 // Blockis is a game similar to Tetris(R). I didn't read any other tetris
 // code before writing this. I only played and studied the behaviour of a
@@ -64,10 +64,10 @@
 // Mikael O. Bonnier
 /////////////////////////////////////////////////////////////////////
 
-// It is compiled on my system by:
-// p=blockis; gcc $p.c -o $p -lncurses -std=c99
-//
-/* indent -nbad -bap -nbc -bbo -hnl -br -brs -c33 -cd33 -ncdb -ce -ci4 -cli0 -d0 -di1 -nfc1 -i4 -ip0 -l80 -lp -npcs -nprs -npsl -sai -saf -saw -ncs -nsc -sob -nfca -cp33 -ss -ts8 -il1 --no-tabs blockis.c  */
+// Compile using Arduino IDE.
+// It compiles but does not work now.
+// Indent using Arduino IDE.
+/**/
 //#include <ncurses.h>
 //#include <sys/param.h>
 //#include <time.h>
@@ -544,4 +544,3 @@ void doCellSetBlock(int r, int c)
 {
   _nMatrix[r][c] = _iColor;
 }
-
