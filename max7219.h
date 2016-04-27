@@ -16,6 +16,7 @@
 #include <fcntl.h>
 #include <sys/ioctl.h>
 #include <linux/spi/spidev.h>
+#include <stdint.h>
 int init_max7219();
 int init_spi(int fd);
 void clear_led_matrix(int fd);
