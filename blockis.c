@@ -181,10 +181,13 @@ int main(int argc, char *argv[])
                 _nRot = _nRot >= 3 ? 0 : _nRot + 1;
                 break;
             case KEY_DC:
+            case KEY_PPAGE:
             case 'e':
                 _nRot = _nRot <= 0 ? 3 : _nRot - 1;
                 break;
             case KEY_END:
+            case KEY_HOME:
+            case KEY_NPAGE:
             case 'q':
             case 'Q':
                 stop();
@@ -207,7 +210,7 @@ int main(int argc, char *argv[])
             refresh();
             napms(_nDelay);
 
-            if (ks == KEY_DOWN || ks == 's' || loopCount % _INTERLEAVE == 0)
+            if (ks == KEY_DOWN || ks == KEY_IC || ks == 's' || loopCount % _INTERLEAVE == 0)
                 ++_nMRow;
             ++loopCount;        // loopCount will wrap around at INT_MAX.
         }
@@ -215,14 +218,18 @@ int main(int argc, char *argv[])
         flushinp();
         switch (ks) {
         case KEY_DOWN:
+        case KEY_IC:
         case 's':
             start();
             break;
         case KEY_DC:
+        case KEY_PPAGE:
         case 'e':
             resume();
             break;
         case KEY_END:
+        case KEY_HOME:
+        case KEY_NPAGE:
         case 'q':
         case 'Q':
             endwin();

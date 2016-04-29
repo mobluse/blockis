@@ -20,4 +20,6 @@ How to connect the 8x8 LED matrix to the GPIO-pins of a Raspberry Pi:
 (Table from https://github.com/rm-hull/max7219.) 
 
 Discuss this resource in Swedish (på svenska): https://groups.google.com/forum/#!topic/coderdojo-lund/5CGq0gMiQac  
-A video of the 8x8 LED matrix program is also in Swedish: https://youtu.be/A5NT93l-vrI
+A video of the 8x8 LED matrix program exists also in Swedish: https://youtu.be/A5NT93l-vrI
+
+Keys to play: See source code, e.g. blockis.c.
