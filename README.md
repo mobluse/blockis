@@ -9,7 +9,8 @@ Keys to play: W=Up, A=Left, S=Down=Ins, D=Right, E=PgUp=Del, Q=PgDn=End=Home.
 
 Download using Git (you may need to install Git first): `git clone https://github.com/mobluse/blockis`  
 Install in Ubuntu/Raspbian/Debian: `cd blockis; ./install.sh` and run `./blockis` and it runs w/o known bugs.
-It also runs in [Bash on Ubuntu on Windows](https://github.com/Microsoft/BashOnWindows) for Windows 10, but with some bugs:
+It also runs in [Bash on Ubuntu on Windows](https://github.com/Microsoft/BashOnWindows) for Windows 10, but with 
+some [bugs](https://github.com/Microsoft/BashOnWindows/issues/301):
 Home and End keys don't always work to pause or quit. If you press and hold S, Down or Ins and then release, the game often stops,
 but can be resumed by pressing the same key again. When you then resume, the block is rotated, because
 it seems as if the key isn't consumed in that case.
