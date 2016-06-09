@@ -1,7 +1,6 @@
 #!/bin/sh
 sudo apt-get update && sudo apt-get -y upgrade
-sudo apt-get -y install gcc
-sudo apt-get -y install libncurses5-dev
+sudo apt-get -y install gcc libncurses5-dev
 sudo apt-get -y autoremove
 ./rebuild.sh
 echo "How to switch on SPI:"
